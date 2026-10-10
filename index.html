@@ -28,6 +28,15 @@
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
+body{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text; user-select:text; -webkit-touch-callout:default}
+img,svg,canvas{-webkit-user-drag:none; -webkit-touch-callout:none}
+.field.plan{resize:vertical; min-height:120px; font-family:ui-monospace,Menlo,monospace; font-size:13px; line-height:1.5}
+.okn{color:#2E9E5B!important; font-weight:800}
+.jtags{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:10px}
+.tchip{background:color-mix(in srgb, var(--blue) 12%, transparent); color:var(--blue); border-radius:99px; padding:5px 11px; font-size:13px; font-weight:700; line-height:1.2}
+.tchip.ghost{background:var(--soft); color:var(--muted)}
+.field.tagin{width:110px; padding:5px 11px; font-size:13px; border-radius:99px}
 html{scroll-padding-top:env(safe-area-inset-top,0px); -webkit-text-size-adjust:100%}
 *,*::before,*::after{box-sizing:inherit}
 html,body{margin:0}
@@ -312,6 +321,12 @@ table.hab{border-collapse:separate; border-spacing:0}
 .tnb{padding-left:22px}
 /* mood tab */
 .mood-layout{display:grid; gap:18px; align-items:start}
+.habits-top{display:grid; gap:18px; align-items:start; margin-bottom:18px}
+.hstat{display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1.5px dashed var(--line)}
+.hstat:last-child{border-bottom:0}
+.hstat .r{display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; font-size:14px}
+.hstat .r span{color:var(--muted); font-weight:700; font-size:12px; white-space:nowrap}
+.hico.sm{min-width:40px; height:40px; font-size:16px; padding:0 8px; flex:none}
 .mgridy{display:grid; grid-template-columns:26px repeat(12,1fr); gap:3px; overflow-x:auto}
 .mgridy .mh{text-align:center; font-family:var(--hand); font-size:18px; color:var(--deep)}
 .mgridy .dn{font-size:11px; font-weight:800; color:var(--muted); display:grid; place-items:center}
@@ -446,6 +461,7 @@ table.hab{border-collapse:separate; border-spacing:0}
   .money-top{grid-template-columns:1fr 1fr; align-items:start}
   .tcols{grid-template-columns:1fr 1fr}
   .jgrid{grid-template-columns:1fr 1fr}
+  .habits-top{grid-template-columns:1.4fr 1fr}
   .ov{align-items:center}
 }
 /* iPad landscape */
@@ -545,7 +561,7 @@ var KV=(function(){
 })();
 
 /* ================= data ================= */
-function DEF(){return {v:1,budgets:{},yhabits:{},settings:{requireGoal:false},boards:{},goals:{},tasks:{},tx:{},moods:{},habits:{},habitLog:{},journal:{}}}
+function DEF(){return {v:1,budgets:{},yhabits:{},jtags:{},settings:{requireGoal:false},boards:{},goals:{},tasks:{},tx:{},moods:{},habits:{},habitLog:{},journal:{}}}
 var D=DEF(), STK=[], INK={};
 var saveT=null;
 function save(){clearTimeout(saveT); saveT=setTimeout(function(){KV.set("state",D)},250); if(window.cloudTouchRef) window.cloudTouchRef()}
@@ -555,7 +571,7 @@ function saveInk(date){clearTimeout(inkT[date]); inkT[date]=setTimeout(function(
   if(INK[date]&&INK[date].length) KV.set("ink:"+date,INK[date]); else KV.del("ink:"+date); if(window.cloudTouchRef) window.cloudTouchRef();},400)}
 
 var U={view:"home", year:new Date().getFullYear(), ym:today().slice(0,7), wk:monday(today()), day:today(),
-  modal:null, range:"month", tmode:"progress", open:{}, myear:new Date().getFullYear(), editBudget:false, sel:-1, txKind:"out", txCat:"Ăn uống", err:"", jmode:"text", pen:"#1D2433", penW:3, tool:"pen",
+  modal:null, hym:today().slice(0,7), range:"month", tmode:"progress", open:{}, myear:new Date().getFullYear(), editBudget:false, sel:-1, txKind:"out", txCat:"Ăn uống", err:"", jmode:"text", pen:"#1D2433", penW:3, tool:"pen",
   habEmo:"𝄞", jgroup:"month", confirm:null, celebrate:null, stkTarget:null};
 
 /* ================= goal logic ================= */
@@ -637,10 +653,12 @@ function isYH(hb,ym){return (D.yhabits[ym.slice(0,4)]||[]).indexOf(hb)>-1}
 function habList(m){return m.y?(D.yhabits[m.y]||(D.yhabits[m.y]=[])):(D.habits[m.ym]||(D.habits[m.ym]=[]))}
 function habAttr(hb,ym){return isYH(hb,ym)?' data-y="'+ym.slice(0,4)+'"':' data-ym="'+ym+'"'}
 function words(t){t=(t||"").trim(); return t?t.split(/\s+/).length:0}
+function dayTags(d){var r=(D.jtags[d]||[]).slice(); tagsOf(D.journal[d]).forEach(function(k){if(r.indexOf(k)<0) r.push(k)}); return r}
+function usedTags(){var c={}; Object.keys(D.jtags).forEach(function(d){(D.jtags[d]||[]).forEach(function(k){c[k]=(c[k]||0)+1})}); Object.keys(D.journal).forEach(function(d){tagsOf(D.journal[d]).forEach(function(k){c[k]=(c[k]||0)+1})}); return Object.keys(c).sort(function(a,b){return c[b]-c[a]})}
 function tagsOf(t){var r=[],m,re=/#([\p{L}\p{N}_]+)/gu; while((m=re.exec(t||""))) {var k=m[1].toLowerCase(); if(r.indexOf(k)<0) r.push(k)} return r}
 
 function renderTop(){
-  var nav=[["year","365","Year"],["month","31","Month"],["week","7","Week"],["day","1","Day"],["tasks","✓","Tasks"],["journal","✎","Journal"],["mood","☺","Mood"],["money","₫","Money"]];
+  var nav=[["year","365","Year"],["month","31","Month"],["week","7","Week"],["day","1","Day"],["money","₫","Money"],["habits","✿","Habits"],["tasks","✓","Tasks"],["journal","✎","Journal"],["mood","☺","Mood"]];
   document.getElementById("top").innerHTML=
     '<div class="tl"><button class="ib" data-act="view" data-v="home" aria-label="Vision board">'+ICON_HOME+'</button></div>'+
     '<nav class="mainnav" aria-label="Views">'+nav.map(function(x){return '<button data-act="view" data-v="'+x[0]+'" class="'+(U.view===x[0]?"on":"")+'"'+(U.view===x[0]?' aria-current="page"':'')+'><b>'+x[1]+'</b><span class="lb">'+x[2]+'</span></button>'}).join("")+'</nav>'+
@@ -807,6 +825,9 @@ function vDay(){
       :'<button class="tag" data-act="openYear" data-v="'+dt.getFullYear()+'">+ Add habits</button>')+'</div></div>';
   var pen=U.jmode==="pen", cols=["#2B1D12","#3382F8","#EA6101","#F99A00","#2E9E5B","#E066B5"];
   h+='<div class="card journal"><div class="jbar"><div class="h2" style="margin:0;flex:1">Journal</div><div class="seg"><button data-act="jmode" data-v="text" class="'+(!pen?"on":"")+'">Type</button><button data-act="jmode" data-v="pen" class="'+(pen?"on":"")+'">Draw</button></div></div>';
+  var dtg=D.jtags[d]||[], sug=usedTags().filter(function(k){return dtg.indexOf(k)<0}).slice(0,6);
+  h+='<div class="jtags">'+dtg.map(function(k){return '<button class="tchip" data-act="rmTag" data-v="'+esc(k)+'" aria-label="Remove tag '+esc(k)+'">#'+esc(k)+' ×</button>'}).join("")+
+    '<input id="tagIn" class="field tagin" data-enter="addTag" placeholder="+ tag" autocapitalize="none" autocomplete="off">'+sug.map(function(k){return '<button class="tchip ghost" data-act="pickTag" data-v="'+esc(k)+'">#'+esc(k)+'</button>'}).join("")+'</div>';
   if(pen) h+='<div class="tools" style="margin-bottom:10px">'+cols.map(function(c){return '<button class="sw'+(U.tool==="pen"&&U.pen===c?' on':'')+'" style="background:'+c+'" data-act="penC" data-v="'+c+'" aria-label="Pen color"></button>'}).join("")+
     [[2,"Thin"],[4,"Medium"],[8,"Bold"]].map(function(x){return '<button class="tb'+(U.tool==="pen"&&U.penW===x[0]?' on':'')+'" data-act="penW" data-v="'+x[0]+'">'+x[1]+'</button>'}).join("")+
     '<button class="tb'+(U.tool==="eraser"?' on':'')+'" data-act="eraser">Eraser</button><button class="tb" data-act="undo">Undo</button><button class="tb" data-act="clearInk">'+(U.confirm==="ink"?"Tap again to clear":"Clear")+'</button></div>';
@@ -889,12 +910,13 @@ function vMoney(){
 function jEntry(d){
   var t=(D.journal[d]||"").trim(), md=D.moods[d], dt=pd(d);
   var body=esc(t).replace(/#([\p{L}\p{N}_]+)/gu,'<span class="htag">#$1</span>');
-  return '<article class="card jentry" data-q="'+esc(t.toLowerCase())+'"><button class="jd" data-act="openDay" data-v="'+d+'"><b>'+dt.getDate()+'</b><span>'+WDF[dt.getDay()]+'<br><small>'+MS[dt.getMonth()]+' '+dt.getFullYear()+', '+words(t)+' words</small></span>'+(md?'<i class="jmood">'+stk(md)+'</i>':'')+'</button>'+
-    (t?'<p class="jt">'+body+'</p>':'')+(INK[d]&&INK[d].length?'<canvas class="inkprev big" data-ink="'+d+'"></canvas>':'')+'</article>';
+  return '<article class="card jentry" data-q="'+esc((t+' '+(D.jtags[d]||[]).map(function(k){return '#'+k}).join(' ')).toLowerCase())+'"><button class="jd" data-act="openDay" data-v="'+d+'"><b>'+dt.getDate()+'</b><span>'+WDF[dt.getDay()]+'<br><small>'+MS[dt.getMonth()]+' '+dt.getFullYear()+', '+words(t)+' words</small></span>'+(md?'<i class="jmood">'+stk(md)+'</i>':'')+'</button>'+
+    ((D.jtags[d]||[]).length?'<div class="jtags">'+D.jtags[d].map(function(k){return '<span class="tchip">#'+esc(k)+'</span>'}).join("")+'</div>':'')+(t?'<p class="jt">'+body+'</p>':'')+(INK[d]&&INK[d].length?'<canvas class="inkprev big" data-ink="'+d+'"></canvas>':'')+'</article>';
 }
 function vJournal(){
   var all=[]; Object.keys(D.journal).forEach(function(d){if((D.journal[d]||"").trim()) all.push(d)});
   Object.keys(INK).forEach(function(d){if(INK[d]&&INK[d].length&&all.indexOf(d)<0) all.push(d)});
+  Object.keys(D.jtags).forEach(function(d){if((D.jtags[d]||[]).length&&all.indexOf(d)<0) all.push(d)});
   all.sort().reverse();
   var tw=all.reduce(function(a,d){return a+words(D.journal[d])},0);
   var h='<section class="jlist"><div class="row wrap" style="justify-content:space-between;margin-bottom:6px"><h1 class="hand" style="font-size:40px">Journal</h1><div class="row wrap"><div class="seg"><button data-act="jgroup" data-v="month" class="'+(U.jgroup==="month"?"on":"")+'">By month</button><button data-act="jgroup" data-v="tag" class="'+(U.jgroup==="tag"?"on":"")+'">By tag</button></div><input id="jSearch" class="field" data-input="jsearch" placeholder="Search" style="width:220px" autocomplete="off"></div></div>'+
@@ -903,7 +925,7 @@ function vJournal(){
   var groups=[], idx={};
   function add(key,label,d){if(!(key in idx)){idx[key]=groups.length; groups.push({label:label,ds:[]})} groups[idx[key]].ds.push(d)}
   if(U.jgroup==="tag"){
-    all.forEach(function(d){var tg=tagsOf(D.journal[d]); if(!tg.length) add("~","Untagged",d); tg.forEach(function(k){add(k,"#"+k,d)})});
+    all.forEach(function(d){var tg=dayTags(d); if(!tg.length) add("~","Untagged",d); tg.forEach(function(k){add(k,"#"+k,d)})});
     groups.sort(function(a,b){if(a.label==="Untagged") return 1; if(b.label==="Untagged") return -1; return b.ds.length-a.ds.length});
   } else all.forEach(function(d){var m=d.slice(0,7); add(m,MF[+m.slice(5)-1]+' '+m.slice(0,4),d)});
   groups.forEach(function(g){var w=g.ds.reduce(function(a,d){return a+words(D.journal[d])},0);
@@ -945,6 +967,23 @@ function vTasks(){
   return h+'</section>';
 }
 
+/* ---------- habits ---------- */
+function habStreak(id){var d=today(), n=0; if((D.habitLog[d]||[]).indexOf(id)<0) d=addDays(d,-1);
+  while((D.habitLog[d]||[]).indexOf(id)>-1){n++; d=addDays(d,-1)} return n}
+function vHabits(){
+  var ym=U.hym, y=ym.slice(0,4), t=today(), n=daysIn(ym), hs=habitsFor(ym);
+  var upto=ym<t.slice(0,7)?n:(ym===t.slice(0,7)?+t.slice(8):0);
+  var h='<section><div class="weekhead"><button class="navb" data-act="hymN" data-n="-1" aria-label="Previous month">‹</button><h1>Habits<small>'+MF[+ym.slice(5)-1]+' '+y+'</small></h1><button class="navb" data-act="hymN" data-n="1" aria-label="Next month">›</button></div><div class="habits-top">';
+  h+='<div class="card"><div class="h2">This month</div>'+(hs.length?hs.map(function(hb){var c=0;
+      for(var i=1;i<=n;i++) if((D.habitLog[ym+"-"+pad(i)]||[]).indexOf(hb.id)>-1) c++;
+      var r=upto?c/upto:0, st=habStreak(hb.id);
+      return '<div class="hstat"><span class="hico sm">'+esc(hb.emo||"•")+'</span><div style="flex:1;min-width:0"><div class="r"><b>'+esc(hb.name)+'</b><span>'+c+'/'+(upto||n)+' days'+(ym===t.slice(0,7)&&st?', '+st+'-day streak':'')+'</span></div><div class="bar thin"><i style="width:'+Math.min(100,r*100).toFixed(1)+'%"></i></div></div></div>'}).join(""):'<div class="empty">No habits yet.</div>')+'</div>';
+  var yh=D.yhabits[y]||[];
+  h+='<div class="card"><div class="h2">Yearly habits '+y+'</div><div class="yhab">'+yh.map(function(hb){return '<button class="hico" data-act="modal" data-v="habit" data-id="'+hb.id+'" data-y="'+y+'" title="'+esc(hb.name)+'" aria-label="'+esc(hb.name)+'">'+esc(hb.emo)+'</button>'}).join("")+
+    '<button class="hico add" data-act="modal" data-v="newYHabit" data-y="'+y+'" aria-label="New habit">+</button></div></div></div>';
+  return h+vHabitsMonth(ym)+'</section>';
+}
+
 /* ---------- mood ---------- */
 function vMood(){
   var y=U.myear, cnt={}, tot=0;
@@ -971,6 +1010,33 @@ function optList(goals,cur,emptyLabel){
 function stkImport(){return '<label class="btn ghost" style="text-align:center;cursor:pointer">+ Add sticker<input type="file" accept="image/*" multiple hidden data-change="importStk"></label>'}
 function emoPick(act,cur){return '<div class="chips emopick">'+HAB_EMO.map(function(e){return '<button data-act="'+act+'" data-v="'+esc(e)+'" class="'+(cur===e?"on":"")+'">'+esc(e)+'</button>'}).join("")+'</div>'}
 
+var PLAN_PROMPT=["You are helping me plan a study or project schedule for my planner app. Read the material I attach (book, syllabus or table of contents) and the details below, then write a day-by-day plan.",
+"",
+"My details:",
+"- Goal: [what I want to finish or achieve]",
+"- Deadline: [date]",
+"- Start date: [date]",
+"- Schedule: [how many sessions per week, which weekdays, minutes per session]",
+"- Current level: [where I am starting from]",
+"",
+"Output rules (follow exactly, my app reads this text automatically):",
+"1. Group tasks by month. Start each month with one heading line: # Month name: short goal for that month",
+"2. Each task is one line: YYYY-MM-DD | task description",
+"3. Use real calendar dates that match my schedule. One task per line. A date can appear on several lines.",
+"4. Keep each task short and concrete, under 80 characters.",
+"5. Output only the plan lines. No intro, no notes, no bullet points, no numbering, no markdown code block.",
+"",
+"Example:",
+"# October: Pieces 1-3",
+"2026-10-12 | Read p.1-4, clap rhythms",
+"2026-10-14 | Piece 1, hands separate",
+"# November: Pieces 4-6",
+"2026-11-02 | Piece 4, right hand"].join("\n");
+function importBox(id,isYear){
+  return '<div class="grp"><span class="lbl">Import plan</span><textarea id="planIn" class="field plan" rows="6" placeholder="'+(isYear?'# October: Pieces 1-3&#10;2026-10-12 | Task&#10;2026-10-14 | Task':'2026-10-12 | Task&#10;2026-10-14 | Task')+'"></textarea>'+
+    (U.note&&U.noteAt==="plan"?'<div class="hint okn">'+esc(U.note)+'</div>':'')+(U.err&&U.errAt==="plan"?'<div class="err">'+esc(U.err)+'</div>':'')+
+    '<button class="btn ghost" data-act="importPlan" data-id="'+id+'">Import</button></div>';
+}
 function vModal(){
   var m=U.modal; if(!m) return "";
   var err=U.err?'<div class="err">'+esc(U.err)+'</div>':'';
@@ -992,6 +1058,7 @@ function vModal(){
       '<div class="grp"><div class="bar"><i style="width:'+pct(pr)+'%"></i></div><span class="hint">'+pct(pr)+'% done'+(c[1]?', '+c[0]+'/'+c[1]+' tasks':'')+'</span>'+
       toggle("goalDone",!!g.done,"Mark as done","",' data-id="'+g.id+'"')+'</div>'+
       (kids.length?'<div class="grp"><span class="lbl">Monthly goals</span>'+kids.map(function(k){return '<div class="row" style="justify-content:space-between"><span>'+(k.ym?MS[+k.ym.slice(5)-1]+': ':'')+esc(k.title)+'</span><b class="hint">'+pct(prog(k.id))+'%</b></div>'}).join("")+'</div>':'')+
+      importBox(g.id,true)+
       '<div class="grp"><span class="lbl">Sticker</span>'+stickerGrid("goalStk",g.sticker,' data-id="'+g.id+'"')+'<div class="row">'+(g.sticker?'<button class="btn ghost" data-act="goalStk" data-v="" data-id="'+g.id+'">Remove sticker</button>':'')+stkImport()+'</div></div>'+
       '<div class="grp">'+delBtn("g"+g.id,"delGoal","Delete goal",' data-id="'+g.id+'"')+'</div>');
   }
@@ -1002,7 +1069,7 @@ function vModal(){
       '<button class="btn" data-act="saveGoal" data-id="'+gg.id+'">Save</button></div>'+(gg.level==="month"?(function(){
       var ym=gg.ym, t0=today(), def=t0.slice(0,7)===ym?t0:ym+"-01", ts=tasksOf(function(x){return x.goalId===gg.id}).sort(function(a,b){return a.date<b.date?-1:1});
       return '<div class="grp"><span class="lbl">Tasks</span>'+ts.map(function(x){return '<div class="wtask'+(x.done?' done':'')+'"><button class="chk'+(x.done?' on':'')+'" data-act="task" data-id="'+x.id+'" aria-label="Done"></button><span class="stb"><span>'+esc(x.text)+'</span><em>'+wdShort(x.date)+' '+dm(x.date)+'</em></span><button class="del" data-act="delSub" data-id="'+x.id+'" aria-label="Delete task">×</button></div>'}).join("")+
-        '<div class="subrow"><input id="mst_'+gg.id+'" class="field" data-enter="addSub" data-pre="m" data-id="'+gg.id+'" placeholder="New task" autocomplete="off"><input id="msd_'+gg.id+'" class="field dt" type="date" value="'+def+'" min="'+ym+'-01" max="'+ym+'-'+pad(daysIn(ym))+'" aria-label="Date"><button class="btn sq" data-act="addSub" data-pre="m" data-id="'+gg.id+'" aria-label="Add task">+</button></div></div>'})():'')+
+        '<div class="subrow"><input id="mst_'+gg.id+'" class="field" data-enter="addSub" data-pre="m" data-id="'+gg.id+'" placeholder="New task" autocomplete="off"><input id="msd_'+gg.id+'" class="field dt" type="date" value="'+def+'" min="'+ym+'-01" max="'+ym+'-'+pad(daysIn(ym))+'" aria-label="Date"><button class="btn sq" data-act="addSub" data-pre="m" data-id="'+gg.id+'" aria-label="Add task">+</button></div></div>'+importBox(gg.id,false)})():'')+
       '<div class="grp"><div class="bar"><i style="width:'+pct(prog(gg.id))+'%"></i></div><span class="hint">'+goalMeta(gg)+'</span>'+
       toggle("goalDone",!!gg.done,"Mark as done","",' data-id="'+gg.id+'"')+'</div><div class="grp">'+delBtn("g"+gg.id,"delGoal","Delete goal",' data-id="'+gg.id+'"')+'</div>');
   }
@@ -1034,6 +1101,9 @@ function vModal(){
     acc+=(Cloud.err?'<div class="err">'+esc(Cloud.err)+'</div>':'');
     return sheet("Settings",'<div class="grp"><span class="lbl">Account and sync</span>'+acc+'</div><div class="grp">'+toggle("reqGoal",D.settings.requireGoal,"Require a goal","Every task must belong to a monthly goal")+'</div>'+
       '<div class="grp"><span class="lbl">Stickers ('+STK.length+')</span>'+toggle("autoCut",D.settings.autoCut!==false,"Remove background on import","Works with white or solid backgrounds")+(STK.length?'<div class="stkgrid">'+STK.map(function(s){return '<label class="stkitem" aria-label="Replace sticker"><img src="'+s.data+'" alt=""><input type="file" accept="image/*" hidden data-change="replaceStk" data-id="'+s.id+'"><span class="x" data-act="delStk" data-id="'+s.id+'" aria-label="Delete sticker">×</span></label>'}).join("")+'</div><span class="hint">Tap a sticker to replace it.</span>':'')+stkImport()+'</div>'+
+      '<div class="grp"><span class="lbl">Import plan guide</span><span class="hint">Copy this prompt, fill in the brackets, send it to any AI with your book. Paste its answer into Import plan on a yearly or monthly goal.</span>'+
+      (U.showGuide?'<textarea id="guideTxt" class="field plan" rows="12" readonly>'+esc(PLAN_PROMPT)+'</textarea>':'')+
+      '<div class="row"><button class="btn ghost" style="flex:1" data-act="toggleGuide">'+(U.showGuide?"Hide prompt":"Show prompt")+'</button><button class="btn" style="flex:1" data-act="copyGuide">'+(U.copied?"Copied":"Copy prompt")+'</button></div></div>'+
       '<div class="grp"><span class="lbl">Backup</span><button class="btn ghost" data-act="exportData">Export backup</button><label class="btn ghost" style="text-align:center;cursor:pointer">Restore from backup<input type="file" accept="application/json,.json" hidden data-change="importData"></label>'+
       '<span class="hint">'+(Cloud.user?'Synced to your account. A backup file is still a good safety net.':'Data lives on this device. Export a backup every week.')+'</span>'+(U.note?'<div class="hint" style="color:var(--inc);font-weight:800">'+esc(U.note)+'</div>':'')+'</div>');
   }
@@ -1053,7 +1123,7 @@ function render(){
   var keep={}, foc=document.activeElement&&document.activeElement.id;
   KEEP.forEach(function(id){var el=document.getElementById(id); if(el) keep[id]=el.value});
   renderTop();
-  var v=U.view, html=v==="home"?vHome():v==="year"?vYear():v==="month"?vMonth():v==="week"?vWeek():v==="day"?vDay():v==="tasks"?vTasks():v==="journal"?vJournal():v==="mood"?vMood():vMoney();
+  var v=U.view, html=v==="home"?vHome():v==="year"?vYear():v==="month"?vMonth():v==="week"?vWeek():v==="day"?vDay():v==="tasks"?vTasks():v==="journal"?vJournal():v==="mood"?vMood():v==="habits"?vHabits():vMoney();
   document.getElementById("app").innerHTML=html;
   document.getElementById("layer").innerHTML=vModal()+vCelebrate();
   KEEP.forEach(function(id){var el=document.getElementById(id); if(el&&keep[id]!=null){ if(el.tagName!=="SELECT"||[].some.call(el.options,function(o){return o.value===keep[id]})) el.value=keep[id] }});
@@ -1133,6 +1203,38 @@ var A={
   delSub:function(el){delete D.tasks[el.dataset.id]; checkBingo(); save()},
   boardColor:function(el){D.boards[U.year].color=el.dataset.v; save()},
   jgroup:function(el){U.jgroup=el.dataset.v},
+  toggleGuide:function(){U.showGuide=!U.showGuide; U.copied=false},
+  copyGuide:function(){
+    function done(){U.copied=true; render(); setTimeout(function(){U.copied=false; if(U.modal&&U.modal.type==="settings") render()},1800)}
+    function fallback(){var ta=document.createElement("textarea"); ta.value=PLAN_PROMPT; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy")}catch(e){} ta.remove(); done()}
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(PLAN_PROMPT).then(done,fallback); else fallback() }catch(e){fallback()}
+  },
+  importPlan:function(el){
+    var g=D.goals[el.dataset.id], ta=document.getElementById("planIn"); if(!g||!ta) return;
+    var lines=ta.value.split(/\r?\n/), isYear=g.level==="year", yr=isYear?g.year:+(g.ym||today()).slice(0,4);
+    var head=null, curGoal=isYear?null:g, ng=0, nt=0, bad=0, now=Date.now();
+    function okDate(d){var x=pd(d); return !isNaN(x)&&ds(x)===d}
+    lines.forEach(function(raw,i){var l=raw.trim().replace(/\*\*/g,"").replace(/^[-*•]\s+/,"").replace(/^\d+[.)]\s+(?=\d{1,4}[-\/])/,"").trim(); if(!l||/^```/.test(l)) return;
+      if(l.charAt(0)==="#"){ if(isYear){head=l.replace(/^#+\s*/,"")||"Plan"; curGoal=null} return }
+      var m=l.match(/^(\d{4}-\d{1,2}-\d{1,2})\s*[|:\-–]?\s*(.+)$/), d, txt;
+      if(m){var q=m[1].split("-"); d=q[0]+"-"+pad(+q[1])+"-"+pad(+q[2]); txt=m[2]}
+      else { m=l.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?\s*[|:\-–]?\s*(.+)$/); if(m){d=(m[3]||yr)+"-"+pad(+m[2])+"-"+pad(+m[1]); txt=m[4]} }
+      if(!d||!okDate(d)||!txt){bad++; return}
+      if(isYear&&(!curGoal||(!head&&curGoal.ym!==d.slice(0,7)))){
+        var gid=uid(); curGoal={id:gid,level:"month",ym:d.slice(0,7),title:head||(MF[+d.slice(5,7)-1]+" plan"),parentId:g.id,done:false,created:now+i};
+        D.goals[gid]=curGoal; ng++;
+      }
+      var tid=uid(); D.tasks[tid]={id:tid,date:d,text:txt.trim(),done:false,goalId:curGoal.id,created:now+i}; nt++;
+    });
+    U.err=""; U.note="";
+    if(!nt){U.err="No tasks found. Each task line needs a date, e.g. 2026-10-12 | Task."; U.errAt="plan"; return}
+    U.note="Imported "+(isYear?ng+" monthly goals, ":"")+nt+" tasks"+(bad?". Skipped "+bad+(bad===1?" line":" lines")+" without a valid date.":"."); U.noteAt="plan";
+    checkBingo(); save();
+  },
+  hymN:function(el){U.hym=shiftMonth(U.hym,+el.dataset.n)},
+  addTag:function(){var v=val("tagIn").replace(/^#+/,"").trim().toLowerCase().replace(/\s+/g,"-"); if(!v) return; var a=D.jtags[U.day]||(D.jtags[U.day]=[]); if(a.indexOf(v)<0) a.push(v); document.getElementById("tagIn").value=""; focusSoon("tagIn"); save()},
+  pickTag:function(el){var a=D.jtags[U.day]||(D.jtags[U.day]=[]); if(a.indexOf(el.dataset.v)<0) a.push(el.dataset.v); save()},
+  rmTag:function(el){var a=D.jtags[U.day]||[], i=a.indexOf(el.dataset.v); if(i>-1) a.splice(i,1); if(!a.length) delete D.jtags[U.day]; save()},
   signGoogle:function(){if(!Cloud.on) return; Cloud.err=""; var pv=new firebase.auth.GoogleAuthProvider();
     Cloud.auth.signInWithPopup(pv).catch(function(e){ if(e&&(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")) Cloud.auth.signInWithRedirect(pv).catch(function(x){setStatus("signedout",authMsg(x))}); else setStatus(Cloud.status,authMsg(e)) })},
   signEmail:function(){if(!Cloud.on) return; var em=val("authEmail"), pw=(document.getElementById("authPass")||{}).value||""; if(!em||!pw){Cloud.err="Enter email and password.";return} Cloud.err="";
@@ -1256,7 +1358,7 @@ function importCover(f){
 function importData(file){
   var r=new FileReader();
   r.onload=function(){try{var j=JSON.parse(r.result); if(!j||j.app!=="so-bingo"||!j.state) throw 0;
-      D=Object.assign(DEF(),j.state); D.yhabits=D.yhabits||{}; D.budgets=D.budgets||{}; STK=j.stickers||[]; var old=Object.keys(INK); INK=j.ink||{};
+      D=Object.assign(DEF(),j.state); D.yhabits=D.yhabits||{}; D.budgets=D.budgets||{}; D.jtags=D.jtags||{}; STK=j.stickers||[]; var old=Object.keys(INK); INK=j.ink||{};
       KV.set("state",D); saveStk(); old.forEach(function(d){if(!INK[d]) KV.del("ink:"+d)}); Object.keys(INK).forEach(function(d){KV.set("ink:"+d,INK[d])});
       U.note="Backup restored."; checkBingo(); U.celebrate=null;
     }catch(e){U.note="This file is not a TARO Bujo backup."} render()};
@@ -1332,6 +1434,7 @@ function buildDocs(){
   grp("tx-",D.tx,function(t){return t.date.slice(0,4)});
   grp("hl-",D.habitLog,function(v,d){return d.slice(0,4)});
   grp("j-",D.journal,function(v,d){return d.slice(0,7)});
+  grp("jt-",D.jtags,function(v,d){return d.slice(0,4)});
   STK.forEach(function(s,i){o["stk-"+s.id]={data:s.data,o:i}});
   Object.keys(INK).forEach(function(d){if(INK[d]&&INK[d].length) o["ink-"+d]={s:INK[d]}});
   return o;
@@ -1345,6 +1448,7 @@ function parseDocs(o){
     else if(k.indexOf("tx-")===0) Object.assign(nd.tx,v.items||{});
     else if(k.indexOf("hl-")===0) Object.assign(nd.habitLog,v.items||{});
     else if(k.indexOf("j-")===0) Object.assign(nd.journal,v.items||{});
+    else if(k.indexOf("jt-")===0) Object.assign(nd.jtags,v.items||{});
     else if(k.indexOf("stk-")===0) stk.push({id:k.slice(4),data:v.data,o:v.o||0});
     else if(k.indexOf("ink-")===0) ink[k.slice(4)]=v.s||[];
   });
@@ -1442,7 +1546,7 @@ Promise.all([KV.get("state"),KV.get("stickers"),KV.keys(),KV.get("syncmeta")]).t
   var ks=(r[2]||[]).map(String).filter(function(k){return k.indexOf("ink:")===0});
   return Promise.all(ks.map(function(k){return KV.get(k).then(function(v){if(v) INK[k.slice(4)]=v})}));
 }).catch(function(){}).then(function(){
-  D.yhabits=D.yhabits||{}; D.budgets=D.budgets||{};
+  D.yhabits=D.yhabits||{}; D.budgets=D.budgets||{}; D.jtags=D.jtags||{};
   U.view=Object.keys(D.boards).length?"day":"home"; checkBingo(); U.celebrate=null; render();
   Cloud.prev=stableMap(buildDocs()); cloudInit(); renderTop();
 });
