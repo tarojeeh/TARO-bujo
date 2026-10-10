@@ -494,6 +494,56 @@ table.hab{border-collapse:separate; border-spacing:0}
   .datebub b{font-size:32px}
   .paper{height:440px}
 }
+/* ---- mobile polish ---- */
+#app.sl{animation:slideL .22s ease-out} #app.sr{animation:slideR .22s ease-out}
+@keyframes slideL{from{opacity:.4; transform:translateX(28px)}}
+@keyframes slideR{from{opacity:.4; transform:translateX(-28px)}}
+@media (prefers-reduced-motion: reduce){#app.sl,#app.sr{animation:none}}
+.year-layout>*,.month-layout>*,.dgrid>*,.tcols>*,.money-top>*,.habits-top>*,.mood-layout>*,.dash>*,.jgrid>*,.day-layout>*{min-width:0}
+.seg{overflow-x:auto; scrollbar-width:none} .seg::-webkit-scrollbar{display:none}
+.seg button{flex:1 0 auto}
+.minical .mth{display:flex; align-items:center; gap:4px; margin-bottom:4px}
+.minical .mth .mt{flex:1; text-align:left; margin:0}
+.minical .mth .mn{width:26px; height:26px; border-radius:50%; font-size:16px; display:grid; place-items:center}
+.minical .mth .mn:hover{background:rgba(255,255,255,.5)}
+.minical .g button{padding:4px 0; border-radius:6px; font:inherit; font-weight:800; font-size:11px; color:inherit}
+.minical .g button.o{opacity:.35}
+.minical .g button.w{background:#F9C27A}
+.minical .g button.t{background:var(--yellow)}
+@media (max-width:699px){
+  .top{-webkit-backdrop-filter:none; backdrop-filter:none; background:var(--bg); padding:8px 12px}
+  .mainnav{position:fixed; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom,0px)); z-index:40; border-radius:22px; padding:5px; box-shadow:0 10px 30px -8px rgba(120,60,0,.4)}
+  .mainnav button{flex:1 1 0; flex-direction:column; gap:2px; padding:6px 1px; font-size:9.5px; letter-spacing:-.01em; border-radius:14px; min-width:0}
+  .mainnav button .lb{display:block}
+  .mainnav button b{font-size:15px}
+  main{padding:8px 12px calc(110px + env(safe-area-inset-bottom,0px))}
+  .strip{padding:0 14px 2px}
+  .strip .yr{font-size:24px}
+  .home h1{font-size:34px}
+  .yhead h1{font-size:28px}
+  .card{padding:15px; border-radius:20px}
+  .dayhead{gap:8px}
+  .dayhead .navb[data-n="-1"]{order:1}
+  .dayhead .datebub{order:2; width:60px; height:60px}
+  .dayhead .datebub b{font-size:26px}
+  .dayhead .datebub span{font-size:10px}
+  .dayhead .daytitle{order:3; flex:1; min-width:0}
+  .dayhead .daytitle h1{font-size:22px}
+  .dayhead .daytitle p{font-size:12px}
+  .dayhead .moodbig{order:4; width:56px; height:56px}
+  .dayhead .moodbig .ph{font-size:13px}
+  .dayhead .navb[data-n="1"]{order:5}
+  .dmoney{order:10; width:100%}
+  .dmt b{font-size:16px}
+  .weekhead h1{font-size:26px}
+  .weekhead h1 small{font-size:13px; display:block; margin:2px 0 0}
+  .calhead h1{font-size:28px}
+  .stats div{padding:0 10px}
+  .stats b{font-size:18px}
+  .jghead h2{font-size:22px}
+  .row.wrap>h1.hand{font-size:32px!important}
+  #jSearch{width:100%!important}
+}
 </style>
 </head>
 <body>
@@ -663,6 +713,7 @@ function renderTop(){
     '<div class="tl"><button class="ib" data-act="view" data-v="home" aria-label="Vision board">'+ICON_HOME+'</button></div>'+
     '<nav class="mainnav" aria-label="Views">'+nav.map(function(x){return '<button data-act="view" data-v="'+x[0]+'" class="'+(U.view===x[0]?"on":"")+'"'+(U.view===x[0]?' aria-current="page"':'')+'><b>'+x[1]+'</b><span class="lb">'+x[2]+'</span></button>'}).join("")+'</nav>'+
     '<div class="tr"><button class="pill" data-act="today">Today</button><button class="ib" data-act="modal" data-v="settings" aria-label="Settings">⚙︎'+(Cloud.on?'<i class="cdot s-'+Cloud.status+'"></i>':'')+'</button></div>';
+  var nv=document.querySelector(".mainnav"), on=nv&&nv.querySelector("button.on"); if(on&&nv.scrollWidth>nv.clientWidth) nv.scrollLeft=on.offsetLeft-nv.clientWidth/2+on.clientWidth/2;
   var st=document.getElementById("strip");
   var ctx={year:String(U.year)+"-00",month:U.ym,week:addDays(U.wk,3).slice(0,7),day:U.day.slice(0,7)}[U.view];
   if(!ctx){st.innerHTML="";return}
@@ -770,9 +821,9 @@ function vHabitsMonth(ym){
 
 function miniCal(ym, wk){
   var n=daysIn(ym), last=ym+"-"+pad(n), t=today(), end=addDays(wk,6);
-  var h='<div class="minical"><button class="mt" data-act="openMonth" data-v="'+ym+'">'+MF[+ym.slice(5)-1]+'</button><div class="g">'+WD.map(function(w){return '<span>'+w.charAt(0)+'</span>'}).join("");
+  var h='<div class="minical"><div class="mth"><button class="mn" data-act="mcal" data-n="-1" aria-label="Previous month">‹</button><button class="mt" data-act="openMonth" data-v="'+ym+'">'+MF[+ym.slice(5)-1]+'</button><button class="mn" data-act="mcal" data-n="1" aria-label="Next month">›</button></div><div class="g">'+WD.map(function(w){return '<span>'+w.charAt(0)+'</span>'}).join("");
   for(var w=monday(ym+"-01"); w<=last; w=addDays(w,7)) for(var i=0;i<7;i++){var d=addDays(w,i);
-    h+='<span class="'+(d.slice(0,7)!==ym?"o ":"")+(d===t?"t":(d>=wk&&d<=end?"w":""))+'">'+pd(d).getDate()+'</span>'}
+    h+='<button class="'+(d.slice(0,7)!==ym?"o ":"")+(d===t?"t":(d>=wk&&d<=end?"w":""))+'" data-act="openWeek" data-v="'+w+'" aria-label="Week of '+dm(d)+'">'+pd(d).getDate()+'</button>'}
   return h+'</div></div>';
 }
 
@@ -887,8 +938,8 @@ function vMoney(){
     [["month","This month"],["7d","7 days"],["30d","30 days"],["6m","6 months"],["12m","12 months"]].map(function(x){return '<button data-act="range" data-v="'+x[0]+'" class="'+(U.range===x[0]?"on":"")+'">'+x[1]+'</button>'}).join("")+'</div></div>';
   h+='<div class="money-top"><div class="card"><div class="stats"><div><span>Income</span><b class="inc">'+shortV(cur[0])+'</b>'+delta(cur[0],prv[0],true)+'</div><div><span>Expense</span><b class="exp">'+shortV(cur[1])+'</b>'+delta(cur[1],prv[1],false)+'</div><div><span>Net</span><b>'+(net<0?"−":"+")+shortV(Math.abs(net))+'</b>'+delta(net,pnet,true)+'</div></div>'+
     '<p class="hint" style="margin:12px 16px 0">Compared with '+prevLabel(U.range)+': income '+shortV(prv[0])+', expense '+shortV(prv[1])+'. Average spend '+vnd(cur[1]/days)+'/day.</p></div>'+budgetCard()+'</div>';
-  var W=700,H=260,top=12,bot=26,L=6,R=6,mi=0,me=0; b.forEach(function(x){mi=Math.max(mi,x.inc);me=Math.max(me,x.exp)}); if(!mi&&!me){mi=me=1}
-  var a=mi||me*.15, e=me||mi*.15, ah=H-top-bot, sc=ah/(a+e), y0=top+a*sc, slot=(W-L-R)/b.length, bw=Math.max(3,slot*.6), every=Math.ceil(b.length/10);
+  var narrow=window.innerWidth<600, W=narrow?360:700,H=narrow?230:260,top=12,bot=26,L=6,R=6,mi=0,me=0; b.forEach(function(x){mi=Math.max(mi,x.inc);me=Math.max(me,x.exp)}); if(!mi&&!me){mi=me=1}
+  var a=mi||me*.15, e=me||mi*.15, ah=H-top-bot, sc=ah/(a+e), y0=top+a*sc, slot=(W-L-R)/b.length, bw=Math.max(3,slot*.6), every=Math.ceil(b.length/(narrow?6:10));
   var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Income and expense over time">';
   b.forEach(function(x,i){var cx=L+slot*i+slot/2;
     if(U.sel===i) svg+='<rect x="'+(L+slot*i)+'" y="'+top+'" width="'+slot+'" height="'+ah+'" rx="6" fill="var(--soft)"/>';
@@ -1232,6 +1283,7 @@ var A={
     checkBingo(); save();
   },
   hymN:function(el){U.hym=shiftMonth(U.hym,+el.dataset.n)},
+  mcal:function(el){var ym=shiftMonth(addDays(U.wk,3).slice(0,7),+el.dataset.n), w=monday(ym+"-01"); if(addDays(w,3).slice(0,7)!==ym) w=addDays(w,7); U.wk=w},
   addTag:function(){var v=val("tagIn").replace(/^#+/,"").trim().toLowerCase().replace(/\s+/g,"-"); if(!v) return; var a=D.jtags[U.day]||(D.jtags[U.day]=[]); if(a.indexOf(v)<0) a.push(v); document.getElementById("tagIn").value=""; focusSoon("tagIn"); save()},
   pickTag:function(el){var a=D.jtags[U.day]||(D.jtags[U.day]=[]); if(a.indexOf(el.dataset.v)<0) a.push(el.dataset.v); save()},
   rmTag:function(el){var a=D.jtags[U.day]||[], i=a.indexOf(el.dataset.v); if(i>-1) a.splice(i,1); if(!a.length) delete D.jtags[U.day]; save()},
@@ -1302,6 +1354,22 @@ document.addEventListener("change",function(e){var t=e.target; if(!t.dataset||!t
   if(t.dataset.change==="replaceStk"&&files[0]) importStickers(files.slice(0,1),t.dataset.id);
   if(t.dataset.change==="importData"&&files[0]) importData(files[0]);
 });
+
+/* ================= swipe to change tabs ================= */
+var SW=null;
+document.addEventListener("touchstart",function(e){
+  if(e.touches.length!==1||U.modal){SW=null;return}
+  var t=e.target; if(t.closest&&t.closest(".paper,.hwrap,.mgridy,input,textarea,select,.mainnav,.strip,.seg,.chart,.subrow")){SW=null;return}
+  SW={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()};
+},{passive:true});
+document.addEventListener("touchend",function(e){
+  if(!SW) return; var c=e.changedTouches[0], dx=c.clientX-SW.x, dy=c.clientY-SW.y, dt=Date.now()-SW.t; SW=null;
+  if(dt>700||Math.abs(dx)<70||Math.abs(dy)>Math.abs(dx)*.6||U.modal) return;
+  var order=["year","month","week","day","money","habits","tasks","journal","mood"], n=dx<0?1:-1, i=order.indexOf(U.view);
+  var ni=i<0?(n>0?0:-1):i+n; if(ni<0||ni>=order.length) return;
+  goView(order[ni]); render();
+  var app=document.getElementById("app"); app.classList.remove("sl","sr"); void app.offsetWidth; app.classList.add(n>0?"sl":"sr");
+},{passive:true});
 
 /* ================= files ================= */
 function cutBackground(c){
